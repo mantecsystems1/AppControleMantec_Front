@@ -109,7 +109,7 @@ const Table = ({ columns = [], data = [], initialPageSize = 10 }) => {
     );
   }
 
-  // Layout dinâmico baseado nas colunas
+  // Layout dinÃ¢mico baseado nas colunas
   return (
     <TableWrapper>
       <TableContainer>

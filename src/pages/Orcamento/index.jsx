@@ -26,7 +26,8 @@ import apiCliente from '../../services/apiCliente';
 import ModalDetalhesOrcamento from '../../components/Modais/Orçamento/ModalDetalhes';
 import ModalEdicaoOrcamento from '../../components/Modais/Orçamento/ModalEdicao';
 import ModalNovoOrcamento from '../../components/Modais/Orçamento/ModalNovo';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 Modal.setAppElement('#root');
 
@@ -180,11 +181,28 @@ const Orcamento = () => {
 		}
 	};
 
-	const handleExport = () => {
-		const ws = XLSX.utils.json_to_sheet(filteredOrcamentos);
-		const wb = XLSX.utils.book_new();
-		XLSX.utils.book_append_sheet(wb, ws, "Orcamentos");
-		XLSX.writeFile(wb, "orcamentos.xlsx");
+	const handleExport = async () => {
+		try {
+			const workbook = new ExcelJS.Workbook();
+			const worksheet = workbook.addWorksheet('Orcamentos');
+			
+			if (filteredOrcamentos.length === 0) {
+				worksheet.addRow(['Nenhum orçamento para exportar']);
+			} else {
+				const headers = Object.keys(filteredOrcamentos[0]);
+				worksheet.addRow(headers);
+				filteredOrcamentos.forEach(orcamento => {
+					worksheet.addRow(Object.values(orcamento));
+				});
+			}
+			
+			const buffer = await workbook.xlsx.writeBuffer();
+			const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+			saveAs(blob, 'orcamentos.xlsx');
+		} catch (error) {
+			console.error('Erro ao exportar orçamentos:', error);
+			alert('Erro ao exportar orçamentos para Excel');
+		}
 	};
 
 	const getClienteNome = (clienteID) => {

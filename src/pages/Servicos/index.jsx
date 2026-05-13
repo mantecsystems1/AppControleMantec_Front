@@ -24,7 +24,8 @@ import apiServico from '../../services/apiCliente';
 import Modal from 'react-modal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlusCircle, faEye, faEdit, faTrash, faDownload } from '@fortawesome/free-solid-svg-icons';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 Modal.setAppElement('#root');
 
@@ -99,11 +100,28 @@ const Servico = () => {
     }
   };
 
-  const handleExport = () => {
-    const ws = XLSX.utils.json_to_sheet(filteredServicos);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Servicos");
-    XLSX.writeFile(wb, "servicos.xlsx");
+  const handleExport = async () => {
+    try {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Servicos');
+      
+      if (filteredServicos.length === 0) {
+        worksheet.addRow(['Nenhum serviço para exportar']);
+      } else {
+        const headers = Object.keys(filteredServicos[0]);
+        worksheet.addRow(headers);
+        filteredServicos.forEach(servico => {
+          worksheet.addRow(Object.values(servico));
+        });
+      }
+      
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, 'servicos.xlsx');
+    } catch (error) {
+      console.error('Erro ao exportar serviços:', error);
+      alert('Erro ao exportar serviços para Excel');
+    }
   };
 
   const filteredServicos = servicos.filter(s =>

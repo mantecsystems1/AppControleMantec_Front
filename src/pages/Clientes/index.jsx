@@ -27,7 +27,8 @@ import Modal from 'react-modal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faEdit, faTrash, faPlus, faPlusCircle, faDownload } from '@fortawesome/free-solid-svg-icons';
 import { FaWhatsapp } from 'react-icons/fa';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 Modal.setAppElement('#root');
 
@@ -114,11 +115,28 @@ const Clientes = () => {
     }
   };
 
-  const handleExport = () => {
-    const ws = XLSX.utils.json_to_sheet(filteredClientes);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Clientes");
-    XLSX.writeFile(wb, "clientes.xlsx");
+  const handleExport = async () => {
+    try {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Clientes');
+      
+      if (filteredClientes.length === 0) {
+        worksheet.addRow(['Nenhum cliente para exportar']);
+      } else {
+        const headers = Object.keys(filteredClientes[0]);
+        worksheet.addRow(headers);
+        filteredClientes.forEach(cliente => {
+          worksheet.addRow(Object.values(cliente));
+        });
+      }
+      
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, 'clientes.xlsx');
+    } catch (error) {
+      console.error('Erro ao exportar clientes:', error);
+      alert('Erro ao exportar clientes para Excel');
+    }
   };
 
   // Filtra clientes pelo nome E apenas os ativos

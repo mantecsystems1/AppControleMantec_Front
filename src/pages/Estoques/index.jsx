@@ -25,7 +25,8 @@ import apiEstoque from '../../services/apiCliente'; // Importe a API correta par
 import apiCliente from '../../services/apiCliente'; // Importe a API para manipulação de Produto
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faEdit, faTrash, faPlus, faDownload } from '@fortawesome/free-solid-svg-icons';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 // Definir o elemento de aplicação para react-modal
 Modal.setAppElement('#root');
@@ -157,11 +158,28 @@ const Estoque = () => {
   // Função para mudar a página
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  const handleExport = () => {
-    const ws = XLSX.utils.json_to_sheet(filteredItens);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Estoques");
-    XLSX.writeFile(wb, "estoques.xlsx");
+  const handleExport = async () => {
+    try {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Estoques');
+      
+      if (filteredItens.length === 0) {
+        worksheet.addRow(['Nenhum item de estoque para exportar']);
+      } else {
+        const headers = Object.keys(filteredItens[0]);
+        worksheet.addRow(headers);
+        filteredItens.forEach(item => {
+          worksheet.addRow(Object.values(item));
+        });
+      }
+      
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, 'estoques.xlsx');
+    } catch (error) {
+      console.error('Erro ao exportar estoques:', error);
+      alert('Erro ao exportar estoques para Excel');
+    }
   };
 
    const totalPages = Math.ceil(filteredItens.length / itemsPerPage);

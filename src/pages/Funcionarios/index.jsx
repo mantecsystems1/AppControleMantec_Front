@@ -24,7 +24,8 @@ import ModalEdicaoFuncionario from '../../components/Modais/Funcionario/ModalEdi
 import ModalNovo from '../../components/Modais/Funcionario/ModalNovo';
 import apiCliente from '../../services/apiCliente';
 import Modal from 'react-modal';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 Modal.setAppElement('#root');
 
@@ -107,11 +108,28 @@ const Funcionarios = () => {
     }
   };
 
-  const handleExport = () => {
-    const ws = XLSX.utils.json_to_sheet(filteredFuncionarios);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Funcionarios");
-    XLSX.writeFile(wb, "funcionarios.xlsx");
+  const handleExport = async () => {
+    try {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Funcionarios');
+      
+      if (filteredFuncionarios.length === 0) {
+        worksheet.addRow(['Nenhum funcionário para exportar']);
+      } else {
+        const headers = Object.keys(filteredFuncionarios[0]);
+        worksheet.addRow(headers);
+        filteredFuncionarios.forEach(funcionario => {
+          worksheet.addRow(Object.values(funcionario));
+        });
+      }
+      
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, 'funcionarios.xlsx');
+    } catch (error) {
+      console.error('Erro ao exportar funcionários:', error);
+      alert('Erro ao exportar funcionários para Excel');
+    }
   };
 
   const filteredFuncionarios = funcionarios.filter(funcionario =>

@@ -28,7 +28,8 @@ import ModalNovoProduto from '../../components/Modais/Produto/ModalNovo';
 import ModalCadastrarImagem from '../../components/Modais/CadastrarImagem';
 import apiCliente from '../../services/apiCliente';
 import Modal from 'react-modal';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 Modal.setAppElement('#root');
 
@@ -113,12 +114,28 @@ const Produto = () => {
     }
   };
 
-  const handleExport = () => {
-    // Exporta apenas os produtos filtrados
-    const ws = XLSX.utils.json_to_sheet(filteredProdutos);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Produtos");
-    XLSX.writeFile(wb, "produtos.xlsx");
+  const handleExport = async () => {
+    try {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Produtos');
+      
+      if (filteredProdutos.length === 0) {
+        worksheet.addRow(['Nenhum produto para exportar']);
+      } else {
+        const headers = Object.keys(filteredProdutos[0]);
+        worksheet.addRow(headers);
+        filteredProdutos.forEach(produto => {
+          worksheet.addRow(Object.values(produto));
+        });
+      }
+      
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, 'produtos.xlsx');
+    } catch (error) {
+      console.error('Erro ao exportar produtos:', error);
+      alert('Erro ao exportar produtos para Excel');
+    }
   };
 
   const filteredProdutos = produtos.filter(produto =>
