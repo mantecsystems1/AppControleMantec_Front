@@ -114,12 +114,8 @@ const Estoque = () => {
   // Função para atualizar um item
   const handleUpdate = async (formData) => {
     try {
-      const response = await apiEstoque.put(`/Estoque/${formData.produtoID}`, formData);
+      const response = await apiEstoque.put(`/Estoque/${formData.id}`, formData);
       console.log('Item de estoque atualizado:', response.data);
-
-      // Atualizar quantidade na tabela de produtos
-      const produtoResponse = await apiEstoque.put(`/Produto/${formData.produtoID}`, { quantidade: formData.quantidade });
-      console.log('Quantidade do produto atualizada:', produtoResponse.data);
 
       closeModal();
     } catch (error) {
@@ -140,9 +136,6 @@ const Estoque = () => {
       // Se não houver item existente, cria um novo item de estoque
       const response = await apiEstoque.post('/Estoque', formData);
       console.log('Novo item de estoque criado:', response.data);
-      // Atualizar quantidade na tabela de produtos
-      const produtoResponse = await apiEstoque.put(`/Produto/${formData.produtoID}`, { quantidade: formData.quantidade });
-      console.log('Quantidade do produto atualizada:', produtoResponse.data);
       closeModal();
       alert('Novo item de inventário criado com sucesso!');
     } catch (error) {

@@ -2,7 +2,7 @@
 import Modal from 'react-modal';
 import FormularioOrdemDeServico from '../../../Forms/FormularioOrdemDeServico';
 import apiCliente from '../../../../services/apiCliente';
-import { ajustarEstoquePorProdutos, isStatusConcluido } from '../../../../services/estoque';
+import { ajustarEstoquePorProdutos, buscarProdutosComEstoque, isStatusConcluido } from '../../../../services/estoque';
 
 const modalStyles = {
   overlay: {
@@ -65,7 +65,7 @@ const ModalEdicaoOrdemDeServico = ({ isOpen, onClose, item, onOrderSaved }) => {
     numeroOS: 0,
     assinaturaClienteBase64: '',
     assinaturaTecnicoBase64: '',
-    pecasUtilizadas: '',
+    pecasUtilizadas: [],
   });
 
   const [clienteOptions, setClienteOptions] = useState([]);
@@ -78,13 +78,13 @@ const ModalEdicaoOrdemDeServico = ({ isOpen, onClose, item, onOrderSaved }) => {
       try {
         const clientes = await apiCliente.get('/Cliente');
         const funcionarios = await apiCliente.get('/Funcionario');
-        const produtos = await apiCliente.get('/Produto');
+        const produtos = await buscarProdutosComEstoque();
         const servicos = await apiCliente.get('/Servico');
 
         setClienteOptions(clientes.data.filter(c => c.ativo).map(c => ({ value: c.id, label: c.nome })));
         setFuncionarioOptions(funcionarios.data.filter(f => f.ativo).map(f => ({ value: f.id, label: f.nome })));
         setProdutoOptions(
-          produtos.data
+          produtos
             .filter(p => p.ativo)
             .map(p => ({
               value: p.id,
@@ -167,7 +167,7 @@ const ModalEdicaoOrdemDeServico = ({ isOpen, onClose, item, onOrderSaved }) => {
         numeroOS: item.numeroOS || 0,
         assinaturaClienteBase64: item.assinaturaClienteBase64 || '',
         assinaturaTecnicoBase64: item.assinaturaTecnicoBase64 || '',
-        pecasUtilizadas: item.pecasUtilizadas || '',
+        pecasUtilizadas: item.pecasUtilizadas || [],
       });
     }
   }, [item, isOpen]);

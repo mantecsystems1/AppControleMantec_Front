@@ -22,6 +22,38 @@ const mapProdutosValidos = (produtos = []) =>
     }))
     .filter((item) => item.produtoID && item.quantidade > 0);
 
+export const buscarEstoques = async () => {
+  const response = await apiCliente.get('/Estoque');
+  return Array.isArray(response.data) ? response.data : [];
+};
+
+export const anexarEstoqueAProdutos = (produtos = [], estoques = []) => {
+  const estoquePorProduto = new Map(
+    (Array.isArray(estoques) ? estoques : [])
+      .filter((item) => item?.ativo !== false)
+      .map((item) => [String(item.produtoID || item.ProdutoID || ''), item])
+  );
+
+  return (Array.isArray(produtos) ? produtos : []).map((produto) => {
+    const estoque = estoquePorProduto.get(String(produto.id));
+    return {
+      ...produto,
+      quantidade: toNumber(estoque?.quantidade ?? estoque?.Quantidade, 0),
+      estoqueId: estoque?.id || estoque?.Id || '',
+      estoque,
+    };
+  });
+};
+
+export const buscarProdutosComEstoque = async () => {
+  const [produtosResp, estoques] = await Promise.all([
+    apiCliente.get('/Produto'),
+    buscarEstoques(),
+  ]);
+
+  return anexarEstoqueAProdutos(produtosResp.data || [], estoques);
+};
+
 export const ajustarEstoquePorProdutos = async (produtos = [], direction = -1) => {
   const itens = mapProdutosValidos(produtos);
   if (!itens.length) return;
@@ -35,7 +67,7 @@ export const ajustarEstoquePorProdutos = async (produtos = [], direction = -1) =
   }
 
   const estoqueMap = new Map(
-    estoqueList.map((item) => [String(item.produtoID), item])
+    estoqueList.map((item) => [String(item.produtoID || item.ProdutoID), item])
   );
 
   for (const item of itens) {
@@ -45,13 +77,7 @@ export const ajustarEstoquePorProdutos = async (produtos = [], direction = -1) =
 
     let baseQuantidade = toNumber(estoqueItem?.quantidade, NaN);
     if (!Number.isFinite(baseQuantidade)) {
-      try {
-        const produtoResp = await apiCliente.get(`/Produto/${produtoID}`);
-        baseQuantidade = toNumber(produtoResp?.data?.quantidade, 0);
-      } catch (error) {
-        console.error(`Erro ao buscar produto ${produtoID} para ajuste de estoque:`, error);
-        baseQuantidade = 0;
-      }
+      baseQuantidade = 0;
     }
 
     let novaQuantidade = baseQuantidade + delta;
@@ -64,7 +90,7 @@ export const ajustarEstoquePorProdutos = async (produtos = [], direction = -1) =
 
     try {
       if (estoqueItem) {
-        await apiCliente.put(`/Estoque/${produtoID}`, {
+        await apiCliente.put(`/Estoque/${estoqueItem.id}`, {
           ...estoqueItem,
           produtoID,
           quantidade: novaQuantidade,
@@ -80,12 +106,6 @@ export const ajustarEstoquePorProdutos = async (produtos = [], direction = -1) =
       }
     } catch (error) {
       console.error(`Erro ao atualizar estoque do produto ${produtoID}:`, error);
-    }
-
-    try {
-      await apiCliente.put(`/Produto/${produtoID}`, { quantidade: novaQuantidade });
-    } catch (error) {
-      console.error(`Erro ao atualizar quantidade do produto ${produtoID}:`, error);
     }
   }
 };

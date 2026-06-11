@@ -167,15 +167,24 @@ const OrdemDeServico = () => {
      FORMATADORES
   ========================= */
 
-  const getProdutos = ordem =>
-    ordem.produtos?.length
-      ? ordem.produtos.map(p => `${produtos[p.produtoID]} (${p.quantidade})`).join(', ')
-      : produtos[ordem.produtoID] || '-';
+  const getProdutos = ordem => {
+    if (ordem.pecasUtilizadas?.length) {
+      return ordem.pecasUtilizadas
+        .map(p => `${produtos[p.produtoID] || p.produtoID} (${p.quantidade || 1})`)
+        .join(', ');
+    }
+
+    if (ordem.produtoIDs?.length) {
+      return ordem.produtoIDs.map(id => produtos[id] || id).join(', ');
+    }
+
+    return '-';
+  };
 
   const getServicos = ordem =>
-    ordem.servicos?.length
-      ? ordem.servicos.map(s => `${servicos[s.servicoID]} (${s.quantidade})`).join(', ')
-      : servicos[ordem.servicoID] || '-';
+    ordem.servicoIDs?.length
+      ? ordem.servicoIDs.map(id => servicos[id] || id).join(', ')
+      : '-';
 
   /* =========================
      RENDER
