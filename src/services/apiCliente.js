@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const apiCliente = axios.create({
-  baseURL: 'https://localhost:7296/api',
+  baseURL: 'https://mantec2.portalmantec.com.br/api',
 });
 
 export default apiCliente;
