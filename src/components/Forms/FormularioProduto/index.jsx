@@ -10,12 +10,10 @@ import {
   EspacamentoButton,
   Button
 } from './style';
-import ReactSelect from 'react-select';
 
 const FormularioProduto = ({ initialValues, onSubmit, onClose, modalTitle, produtoOptions }) => {
   const [formData, setFormData] = useState({ ...initialValues });
   const [errors, setErrors] = useState({});
-  const disableQuantidadePreco = true;
 
   useEffect(() => {
     // Atualiza o estado do formulário quando initialValues mudar
@@ -42,7 +40,13 @@ const FormularioProduto = ({ initialValues, onSubmit, onClose, modalTitle, produ
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!validate()) return;
-    onSubmit({ ...formData, ativo: true }); // Garante que 'ativo' seja sempre 'true' ao enviar o formulário
+    const { quantidade, estoqueId, estoque, ...produtoData } = formData;
+    onSubmit({
+      ...produtoData,
+      preco: Number(produtoData.preco) || 0,
+      dataEntrada: produtoData.dataEntrada || new Date().toISOString(),
+      ativo: true,
+    });
   };
 
   // Supondo que produtoOptions seja passado como prop e cada produto tem { value, label, quantidade, ... }
@@ -104,7 +108,6 @@ const FormularioProduto = ({ initialValues, onSubmit, onClose, modalTitle, produ
               value={formData.preco || ''} 
               onChange={handleChange}
               placeholder="0,00"
-              disabled={disableQuantidadePreco}
             />
             {errors.preco && <div style={{color:'red',fontSize:'12px'}}>{errors.preco}</div>}
           </FormGroup>
@@ -119,7 +122,7 @@ const FormularioProduto = ({ initialValues, onSubmit, onClose, modalTitle, produ
               value={formData.quantidade || ''} 
               onChange={handleChange}
               placeholder="Digite a quantidade"
-              disabled={disableQuantidadePreco}
+              disabled
             />
           </FormGroup>
         </FormRow>

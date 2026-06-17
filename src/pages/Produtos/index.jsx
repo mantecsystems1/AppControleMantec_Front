@@ -27,6 +27,7 @@ import ModalEdicaoProduto from '../../components/Modais/Produto/ModalEdicao';
 import ModalNovoProduto from '../../components/Modais/Produto/ModalNovo';
 import ModalCadastrarImagem from '../../components/Modais/CadastrarImagem';
 import apiCliente from '../../services/apiCliente';
+import { buscarProdutosComEstoque } from '../../services/estoque';
 import Modal from 'react-modal';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
@@ -50,10 +51,8 @@ const Produto = () => {
 
   const fetchProdutos = async () => {
     try {
-      const response = await apiCliente.get('/Produto', {
-        params: { page: 1, pageSize: 6000 }
-      });
-      setProdutos(response.data.filter(produto => produto.ativo));
+      const produtosComEstoque = await buscarProdutosComEstoque();
+      setProdutos(produtosComEstoque.filter(produto => produto.ativo));
     } catch (error) {
       console.error('Erro ao buscar produtos:', error);
     }
@@ -216,7 +215,7 @@ const Produto = () => {
                 <HideMobile><img src={produto.imagemURL} alt={produto.nome} width="50" /></HideMobile>
                 <td>{produto.nome}</td>
                 <HideMobile>{produto.descricao}</HideMobile>
-                <td>{produto.quantidade}</td>
+                <td>{produto.quantidade ?? 0}</td>
                 <td>{`R$ ${produto.preco.toFixed(2)}`}</td>
                 <HideMobile>{produto.fornecedor}</HideMobile>
                 <HideMobile>{new Date(produto.dataEntrada).toLocaleDateString()}</HideMobile>

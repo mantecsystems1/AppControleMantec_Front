@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import Modal from 'react-modal';
 import FormularioOrcamento from '../../../Forms/FormularioOrcamento';
 import apiCliente from '../../../../services/apiCliente';
+import { buscarProdutosComEstoque } from '../../../../services/estoque';
 import { modalStyles } from './style';
 
 const ModalNovoOrcamento = ({ isOpen, onClose }) => {
 	const [clienteOptions, setClienteOptions] = useState([]);
 	const [produtoOptions, setProdutoOptions] = useState([]);
 	const [servicoOptions, setServicoOptions] = useState([]);
+	const [funcionarioPadraoID, setFuncionarioPadraoID] = useState('');
 	const [formData, setFormData] = useState({
 		clienteID: '',
 		produtos: [{ produtoID: '', quantidade: 1 }],
@@ -27,6 +29,7 @@ const ModalNovoOrcamento = ({ isOpen, onClose }) => {
 
 	useEffect(() => {
 		fetchClientes();
+		fetchFuncionarios();
 		fetchProdutos();
 		fetchServicos();
 	}, []);
@@ -44,10 +47,20 @@ const ModalNovoOrcamento = ({ isOpen, onClose }) => {
 		}
 	};
 
+	const fetchFuncionarios = async () => {
+		try {
+			const response = await apiCliente.get('/Funcionario');
+			const funcionario = response.data.find(item => item.ativo);
+			setFuncionarioPadraoID(funcionario?.id || '');
+		} catch (error) {
+			console.error('Erro ao buscar funcionários:', error);
+		}
+	};
+
 	const fetchProdutos = async () => {
 		try {
-			const response = await apiCliente.get('/Produto');
-			const produtos = response.data
+			const produtosComEstoque = await buscarProdutosComEstoque();
+			const produtos = produtosComEstoque
 				.filter(produto => produto.ativo)
 				.map(produto => ({
 					value: produto.id,
@@ -79,7 +92,7 @@ const ModalNovoOrcamento = ({ isOpen, onClose }) => {
 		try {
 			const payload = {
 				clienteID: formData.clienteID,
-				funcionarioID: null,
+				funcionarioID: funcionarioPadraoID,
 				produtoIDs: formData.produtos.filter(p => p.produtoID).map(p => p.produtoID),
 				servicoIDs: formData.servicos.filter(s => s.servicoID).map(s => s.servicoID),
 				dataEntrada: formData.dataEntrada ? new Date(formData.dataEntrada).toISOString() : new Date().toISOString(),

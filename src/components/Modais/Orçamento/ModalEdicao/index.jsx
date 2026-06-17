@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Modal from 'react-modal';
 import FormularioOrcamento from '../../../Forms/FormularioOrcamento';
 import apiCliente from '../../../../services/apiCliente';
+import { buscarProdutosComEstoque } from '../../../../services/estoque';
 import { modalStyles } from '../ModalNovo/style';
 
 const ModalEdicaoOrcamento = ({ isOpen, onClose, item, onSubmit }) => {
@@ -26,17 +27,20 @@ const ModalEdicaoOrcamento = ({ isOpen, onClose, item, onSubmit }) => {
 	const [clienteOptions, setClienteOptions] = useState([]);
 	const [produtoOptions, setProdutoOptions] = useState([]);
 	const [servicoOptions, setServicoOptions] = useState([]);
+	const [funcionarioPadraoID, setFuncionarioPadraoID] = useState('');
 
 	useEffect(() => {
 		const fetchData = async () => {
 			try {
 				const clientes = await apiCliente.get('/Cliente');
-				const produtos = await apiCliente.get('/Produto');
+				const funcionarios = await apiCliente.get('/Funcionario');
+				const produtos = await buscarProdutosComEstoque();
 				const servicos = await apiCliente.get('/Servico');
 
 				setClienteOptions(clientes.data.filter(c => c.ativo).map(c => ({ value: c.id, label: c.nome })));
+				setFuncionarioPadraoID(funcionarios.data.find(f => f.ativo)?.id || '');
 				setProdutoOptions(
-					produtos.data
+					produtos
 						.filter(p => p.ativo)
 						.map(p => ({
 							value: p.id,
@@ -134,17 +138,36 @@ const ModalEdicaoOrcamento = ({ isOpen, onClose, item, onSubmit }) => {
 		try {
 			// Prepara o payload no formato correto para OrdemDeServico
 			const payload = {
-				...data,
+				id: data.id,
+				clienteID: data.clienteID,
+				funcionarioID: data.funcionarioID || funcionarioPadraoID,
 				produtoIDs: data.produtos.filter(p => p.produtoID).map(p => p.produtoID),
 				servicoIDs: data.servicos.filter(s => s.servicoID).map(s => s.servicoID),
+				dataEntrada: data.dataEntrada ? new Date(data.dataEntrada).toISOString() : new Date().toISOString(),
+				dataConclusao: null,
+				status: data.status || 'Orçamento',
+				observacoes: data.observacoes || '',
+				ativo: true,
+				defeitoRelatado: data.defeitoRelatado || '',
+				diagnostico: data.diagnostico || '',
+				laudoTecnico: null,
+				marca: null,
+				modelo: null,
+				imeIouSerial: null,
+				senhaAcesso: null,
 				pecasUtilizadas: data.produtos.filter(p => p.produtoID).map(p => ({
 					produtoID: p.produtoID,
 					quantidade: p.quantidade
 				})),
 				valorMaoDeObra: Number(data.valorMaoDeObra) || 0,
 				valorPecas: Number(data.valorPecas) || 0,
-				valorServicos: Number(data.valorServicos) || 0,
 				valorTotal: Number(data.valorTotal) || 0,
+				formaPagamento: null,
+				pago: false,
+				tipoAtendimento: null,
+				prioridade: null,
+				assinaturaClienteBase64: null,
+				assinaturaTecnicoBase64: null,
 			};
 			await onSubmit(payload);
 			onClose();

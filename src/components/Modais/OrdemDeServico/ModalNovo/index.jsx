@@ -2,7 +2,7 @@
 import Modal from 'react-modal';
 import FormularioOrdemDeServico from '../../../Forms/FormularioOrdemDeServico';
 import apiCliente from '../../../../services/apiCliente';
-import { ajustarEstoquePorProdutos, isStatusConcluido } from '../../../../services/estoque';
+import { ajustarEstoquePorProdutos, buscarProdutosComEstoque, isStatusConcluido } from '../../../../services/estoque';
 
 const modalStyles = {
   overlay: {
@@ -87,9 +87,9 @@ const ModalNovaOrdemDeServico = ({ isOpen, onClose, onOrderSaved }) => {
 
   const fetchProdutos = async () => {
     try {
-      const response = await apiCliente.get('/Produto');
+      const produtosComEstoque = await buscarProdutosComEstoque();
       // Filtra apenas produtos ativos e com quantidade > 1
-      const produtos = response.data
+      const produtos = produtosComEstoque
         .filter(produto => produto.ativo)
         .map(produto => ({
           value: produto.id,
@@ -149,31 +149,43 @@ const ModalNovaOrdemDeServico = ({ isOpen, onClose, onOrderSaved }) => {
       const dataEntrada = formData.dataEntrada ? new Date(formData.dataEntrada).toISOString() : null;
       const dataConclusao = formData.dataConclusao ? new Date(formData.dataConclusao).toISOString() : null;
 
-      // Preparar dados mantendo compatibilidade com backend atual
       const ordemDeServicoDto = {
-        ...formData,
+        id: formData.id,
+        clienteID: formData.clienteID || '',
+        funcionarioID: formData.funcionarioID || '',
+        produtoIDs: formData.produtoIDs || [],
+        servicoIDs: formData.servicoIDs || [],
         dataEntrada,
         dataConclusao,
-        produtoID: formData.produtos?.[0]?.produtoID || null,
-        servicoID: formData.servicos?.[0]?.servicoID || null,
-        quantidadeProduto: formData.produtos?.[0]?.quantidade || 1,
-        quantidadeServico: formData.servicos?.[0]?.quantidade || 1,
-        produtos: formData.produtos || [],
-        servicos: formData.servicos || [],
-        // Ajuste de tipos para o backend
+        status: formData.status || '',
+        observacoes: formData.observacoes || '',
+        ativo: !!formData.ativo,
+        defeitoRelatado: formData.defeitoRelatado || '',
+        diagnostico: formData.diagnostico || '',
+        laudoTecnico: formData.laudoTecnico || '',
+        marca: formData.marca || '',
+        modelo: formData.modelo || '',
+        imeIouSerial: formData.imeIouSerial || '',
+        senhaAcesso: formData.senhaAcesso || '',
         valorMaoDeObra: formData.valorMaoDeObra ? parseFloat(formData.valorMaoDeObra) : 0,
         valorPecas: formData.valorPecas ? parseFloat(formData.valorPecas) : 0,
         valorTotal: formData.valorTotal ? parseFloat(formData.valorTotal) : 0,
+        formaPagamento: formData.formaPagamento || '',
         pago: !!formData.pago,
-        ativo: !!formData.ativo,
+        dataPagamento: formData.dataPagamento || null,
+        tipoAtendimento: formData.tipoAtendimento || '',
+        prioridade: formData.prioridade || '',
         numeroOS: formData.numeroOS ? parseInt(formData.numeroOS) : 0,
-        emGarantia: !!formData.emGarantia,
-        pecasUtilizadas: Array.isArray(formData.produtos)
-          ? formData.produtos.map(p => ({
-              ProdutoID: p.produtoID,
-              Quantidade: parseInt(p.quantidade) || 1
-            }))
-          : []
+        assinaturaClienteBase64: formData.assinaturaClienteBase64 || '',
+        assinaturaTecnicoBase64: formData.assinaturaTecnicoBase64 || '',
+        pecasUtilizadas: Array.isArray(formData.pecasUtilizadas)
+          ? formData.pecasUtilizadas
+              .filter(p => p.produtoID)
+              .map(p => ({
+                produtoID: p.produtoID,
+                quantidade: parseInt(p.quantidade) || 1
+              }))
+          : [],
       };
 
       console.log('DTO a ser enviado:', ordemDeServicoDto);
@@ -182,7 +194,7 @@ const ModalNovaOrdemDeServico = ({ isOpen, onClose, onOrderSaved }) => {
       console.log('Ordem de Serviço criada:', response.data);
 
       if (isStatusConcluido(formData.status)) {
-        await ajustarEstoquePorProdutos(formData.pecasUtilizadas, -1);
+        await ajustarEstoquePorProdutos(ordemDeServicoDto.pecasUtilizadas, -1);
       }
 
       if (onOrderSaved) {
@@ -195,21 +207,6 @@ const ModalNovaOrdemDeServico = ({ isOpen, onClose, onOrderSaved }) => {
       setSubmitting(false);
     }
   };
-
-  // Ao preparar os dados para envio:
-  const handleCreate = async () => {
-    // ...existing code...
-    const dataEntradaFormatada = dataEntrada ? new Date(dataEntrada).toISOString().slice(0, 10) : null;
-    const dataConclusaoFormatada = dataConclusao ? new Date(dataConclusao).toISOString().slice(0, 10) : null;
-    // ...existing code...
-    const ordemData = {
-        // ...existing code...
-        dataEntrada: dataEntradaFormatada,
-        dataConclusao: dataConclusaoFormatada,
-        // ...existing code...
-    };
-    // ...existing code...
-  }
 
   return (
     <Modal
