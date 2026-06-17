@@ -8,6 +8,7 @@ export const OrdemDeServicoContainer = styled.div`
   transition: all 0.3s ease;
   position: relative;
   
+  
   &::before {
     content: '';
     position: absolute;
